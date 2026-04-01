@@ -1,18 +1,13 @@
 '''
-Compare running times of gimpy and regimpy (reimplementation) and theoretical
-for following algorithms DFS, BFS, augmenting flow, cycle canceling, simplex.
+This script runs algorithms provided by gimpy. Measures running times of
+algorithms and compares it to theoretical running times (after scaling).
 '''
 
-#TODO(aykut)
-#-> Add average support
-#-> Enable algorithm and gimpy picking
+try:
+    from src.gimpy import Graph, DIRECTED_GRAPH
+except ImportError:
+    from coinor.gimpy import Graph, DIRECTED_GRAPH
 
-# import reimplemented gimpy
-import gimpy as regimpy
-# import gimpy
-import imp
-#gimpy = imp.load_source('old', '../../trunk/gimpy.py')
-gimpy = imp.load_source('reimplementation', '../gimpy.py')
 import time
 from random import seed, random, randint
 import math
@@ -42,15 +37,15 @@ sparse_generator = [
 (44, 0.1, 5, 3, (5,10), (30,50), (10,20)),
 (48, 0.1, 6, 4, (5,10), (30,50), (10,20)),
 (52, 0.1, 6, 4, (5,10), (30,50), (10,20)),
-(56, 0.1, 7, 5, (5,10), (30,50), (10,20)),
-(60, 0.1, 7, 5, (5,10), (30,50), (10,20)),
-(64, 0.1, 7, 5, (5,10), (30,50), (10,20)),
-(68, 0.1, 7, 5, (5,10), (30,50), (10,20)),
-(72, 0.1, 7, 5, (5,10), (30,50), (10,20)),
-(76, 0.1, 7, 5, (5,10), (30,50), (10,20)),
-(80, 0.1, 7, 5, (5,10), (30,50), (10,20)),
-(84, 0.1, 7, 5, (5,10), (30,50), (10,20)),
-(88, 0.1, 7, 5, (5,10), (30,50), (10,20)),
+(56, 0.1, 7, 5, (5,10), (30,50), (10,20))
+#(60, 0.1, 7, 5, (5,10), (30,50), (10,20)),
+#(64, 0.1, 7, 5, (5,10), (30,50), (10,20)),
+#(68, 0.1, 7, 5, (5,10), (30,50), (10,20)),
+#(72, 0.1, 7, 5, (5,10), (30,50), (10,20)),
+#(76, 0.1, 7, 5, (5,10), (30,50), (10,20)),
+#(80, 0.1, 7, 5, (5,10), (30,50), (10,20)),
+#(84, 0.1, 7, 5, (5,10), (30,50), (10,20)),
+#(88, 0.1, 7, 5, (5,10), (30,50), (10,20)),
 #(92, 0.1, 7, 5, (5,10), (30,50), (10,20)),
 #(96, 0.1, 7, 5, (5,10), (30,50), (10,20)),
 #(100, 0.1, 7, 5, (5,10), (30,50), (10,20)),
@@ -71,15 +66,15 @@ dense_generator = [
 (44, 0.6, 5, 3, (5,10), (30,50), (10,20)),
 (48, 0.6, 6, 4, (5,10), (30,50), (10,20)),
 (52, 0.6, 6, 4, (5,10), (30,50), (10,20)),
-(56, 0.6, 7, 5, (5,10), (30,50), (10,20)),
-(60, 0.6, 7, 5, (5,10), (30,50), (10,20)),
-(64, 0.6, 7, 5, (5,10), (30,50), (10,20)),
-(68, 0.6, 7, 5, (5,10), (30,50), (10,20)),
-(72, 0.6, 7, 5, (5,10), (30,50), (10,20)),
-(76, 0.6, 7, 5, (5,10), (30,50), (10,20)),
-(80, 0.6, 7, 5, (5,10), (30,50), (10,20)),
-(84, 0.6, 7, 5, (5,10), (30,50), (10,20)),
-(88, 0.6, 7, 5, (5,10), (30,50), (10,20)),
+(56, 0.6, 7, 5, (5,10), (30,50), (10,20))
+#(60, 0.6, 7, 5, (5,10), (30,50), (10,20)),
+#(64, 0.6, 7, 5, (5,10), (30,50), (10,20)),
+#(68, 0.6, 7, 5, (5,10), (30,50), (10,20)),
+#(72, 0.6, 7, 5, (5,10), (30,50), (10,20)),
+#(76, 0.6, 7, 5, (5,10), (30,50), (10,20)),
+#(80, 0.6, 7, 5, (5,10), (30,50), (10,20)),
+#(84, 0.6, 7, 5, (5,10), (30,50), (10,20)),
+#(88, 0.6, 7, 5, (5,10), (30,50), (10,20)),
 #(92, 0.6, 7, 5, (5,10), (30,50), (10,20)),
 #(96, 0.6, 7, 5, (5,10), (30,50), (10,20)),
 #(100, 0.6, 7, 5, (5,10), (30,50), (10,20)),
@@ -93,38 +88,45 @@ dense_generator = [
 ]
 
 # algorithms to be tested
-algo = ['DFS', 'BFS', 'Dijkstra', 'Kruskal', 'Prim', 'PreflowPush', 'AugmentingPath', 'CycleCanceling', 'Simplex']
-module = ['gimpy', 'regimpy', 'theoretical']
-# run_time dictionary keys are modules and values are {algo: list of run-time
-# in secs}
+algo = ['DFS', 'BFS', 'Dijkstra', 'Kruskal', 'Prim', 'PreflowPush',
+        'AugmentingPath', 'CycleCanceling', 'Simplex']
+# we will compare gimpy time to theoretical running time.
+module = ['gimpy', 'theoretical']
+# run_time: Dictionary. Keys are algorithms and values are {module: list of
+# run-time in secs}
 run_time = dict([(a,dict([(m,[]) for m in module])) for a in algo])
-# keys are algo values are file objects that are in the following form
-# instance    gimpy_time    regimpy_time    theoretical_time
-# 0       10            10              5
+# result_file: Dictionary. Keys are algorithms, values are file objects that
+# has text in the following form
+# instance    gimpy_time    theoretical_time
+# 0           10.6          5.4
+# .           .
+# .           .
+# .           .
+# 10          8.2           4.9
 result_file = dict([(a, None) for a in algo])
 #
-method = {'gimpy': {}, 'regimpy':{}}
 
-def generate_graph(seed_i):
+def generate_graph(seed_i, gen = None):
     '''
     Generates random directed graphs for min cost flow problem.
     '''
-    #g = gimpy.Graph(graph_type='digraph', splines='true', layout = 'dot')
-    rg = regimpy.Graph(type=regimpy.DIRECTED_GRAPH, splines='true', layout = 'dot')
+    if gen is not None:
+        (numnodes, density, demand_numnodes, supply_numnodes,
+         demand_range, cost_range, capacity_range) = gen
+    g = Graph(type=DIRECTED_GRAPH, splines='true', layout = 'dot')
     seed(seed_i)
     for i in range(numnodes):
         for j in range(numnodes):
             if i==j:
                 continue
-            if (i, j) in rg.edge_attr:
+            if (i, j) in g.edge_attr:
                 continue
-            if (j,i) in rg.edge_attr:
+            if (j,i) in g.edge_attr:
                 continue
             if random() < density:
                 cap = randint(capacity_range[0], capacity_range[1])
                 cos = randint(cost_range[0], cost_range[1])
-                #g.add_edge(i, j, cost=cos, capacity=cap)
-                rg.add_edge(i, j, cost=cos, capacity=cap)
+                g.add_edge(i, j, cost=cos, capacity=cap)
     # set supply/demand
     # select random demand_numnodes many nodes
     demand_node = {}
@@ -162,116 +164,76 @@ def generate_graph(seed_i):
             demand_node[n] += excess
             break
     # set demand attributes
-    for n in rg.get_node_list():
+    for n in g.get_node_list():
         if n in demand_node:
-            rg.get_node(n).set_attr('demand', -1*demand_node[n])
-            #g.set_node_attr(n, 'demand', -1*demand_node[n])
+            g.get_node(n).set_attr('demand', -1*demand_node[n])
         elif n in supply_node:
-            rg.get_node(n).set_attr('demand', supply_node[n])
-            #g.set_node_attr(n, 'demand', supply_node[n])
+            g.get_node(n).set_attr('demand', supply_node[n])
         else:
-            rg.get_node(n).set_attr('demand', 0)
-            #g.set_node_attr(n, 'demand', 0)
-    #return g, rg
-    return rg
+            g.get_node(n).set_attr('demand', 0)
+    return g
 
-def test_DFS(g, rg):
+def test_DFS(rg):
     root = rg.get_node_list()[0]
-    gtime = time.time()
-    #g.dfs(root)
-    gtime = time.time() - gtime
     rgtime = time.time()
     rg.dfs(root)
     rgtime = time.time() - rgtime
-    run_time['DFS']['gimpy'].append(gtime)
-    run_time['DFS']['regimpy'].append(rgtime)
+    run_time['DFS']['gimpy'].append(rgtime)
 
-def test_BFS(g, rg):
+def test_BFS(rg):
     root = rg.get_node_list()[0]
-    gtime = time.time()
-    #g.bfs(root)
-    gtime = time.time() - gtime
     rgtime = time.time()
     rg.bfs(root)
     rgtime = time.time() - rgtime
-    run_time['BFS']['gimpy'].append(gtime)
-    run_time['BFS']['regimpy'].append(rgtime)
+    run_time['BFS']['gimpy'].append(rgtime)
 
-def test_dijkstra(g, rg):
+def test_dijkstra(rg):
     root = rg.get_node_list()[0]
-    gtime = time.time()
-    #g.search(root, algo='Dijkstra')
-    gtime = time.time() - gtime
     rgtime = time.time()
     rg.search(root, algo='Dijkstra')
     rgtime = time.time() - rgtime
-    run_time['Dijkstra']['gimpy'].append(gtime)
-    run_time['Dijkstra']['regimpy'].append(rgtime)
+    run_time['Dijkstra']['gimpy'].append(rgtime)
 
-def test_kruskal(g, rg):
-    gtime = time.time()
-    #g.minimum_spanning_tree_kruskal(display='off')
-    gtime = time.time() - gtime
+def test_kruskal(rg):
     rgtime = time.time()
     rg.minimum_spanning_tree_kruskal()
     rgtime = time.time() - rgtime
-    run_time['Kruskal']['gimpy'].append(gtime)
-    run_time['Kruskal']['regimpy'].append(rgtime)
+    run_time['Kruskal']['gimpy'].append(rgtime)
 
-def test_prim(g, rg):
+def test_prim(rg):
     root = rg.get_node_list()[0]
-    gtime = time.time()
-    #g.minimum_spanning_tree_prim(source=root, display='off')
-    gtime = time.time() - gtime
     rgtime = time.time()
     rg.minimum_spanning_tree_prim(source=root)
     rgtime = time.time() - rgtime
-    run_time['Prim']['gimpy'].append(gtime)
-    run_time['Prim']['regimpy'].append(rgtime)
+    run_time['Prim']['gimpy'].append(rgtime)
 
-def test_preflow_push(g, rg):
+def test_preflow_push(rg):
     source = rg.get_node_list()[0]
     sink = rg.get_node_list()[-1]
-    gtime = time.time()
-    #g.max_flow_preflowpush(source, sink, algo='FIFO', display='off')
-    gtime = time.time() - gtime
     rgtime = time.time()
     rg.max_flow_preflowpush(source, sink, algo='FIFO')
     rgtime = time.time() - rgtime
-    run_time['PreflowPush']['gimpy'].append(gtime)
-    run_time['PreflowPush']['regimpy'].append(rgtime)
+    run_time['PreflowPush']['gimpy'].append(rgtime)
 
-def test_augmenting_path(g, rg):
+def test_augmenting_path(rg):
     source = rg.get_node_list()[0]
     sink = rg.get_node_list()[-1]
-    gtime = time.time()
-    #g.max_flow(source, sink)
-    gtime = time.time() - gtime
     rgtime = time.time()
     rg.max_flow(source, sink)
     rgtime = time.time() - rgtime
-    run_time['AugmentingPath']['gimpy'].append(gtime)
-    run_time['AugmentingPath']['regimpy'].append(rgtime)
+    run_time['AugmentingPath']['gimpy'].append(rgtime)
 
-def test_cycle_canceling(g, rg):
-    gtime = time.time()
-    #g.min_cost_flow(algo="cycle_canceling")
-    gtime = time.time() - gtime
+def test_cycle_canceling(rg):
     rgtime = time.time()
     rg.min_cost_flow(algo="cycle_canceling")
     rgtime = time.time() - rgtime
-    run_time['CycleCanceling']['gimpy'].append(gtime)
-    run_time['CycleCanceling']['regimpy'].append(rgtime)
+    run_time['CycleCanceling']['gimpy'].append(rgtime)
 
-def test_network_simplex(g, rg):
-    gtime = time.time()
-    #g.min_cost_flow(algo="simplex", pivot='dantzig')
-    gtime = time.time() - gtime
+def test_network_simplex(rg):
     rgtime = time.time()
     rg.min_cost_flow(algo="simplex", pivot='dantzig')
     rgtime = time.time() - rgtime
-    run_time['Simplex']['gimpy'].append(gtime)
-    run_time['Simplex']['regimpy'].append(rgtime)
+    run_time['Simplex']['gimpy'].append(rgtime)
 
 def write_result_files():
     '''
@@ -281,14 +243,12 @@ def write_result_files():
     for a in algo:
         result_file[a] = open(a+'.txt', 'w')
         result_file[a].write("Runing time comparison for "+a+"\n")
-        result_file[a].write("# instance    gimpy_time    regimpy_time    theoretical_time\n")
+        result_file[a].write("# instance    gimpy_time    theoretical_time\n")
         for s in range(len(run_time[a]['gimpy'])):
             result_file[a].write("  ")
             result_file[a].write(str(s).ljust(8))
             result_file[a].write("    ")
             result_file[a].write(str(run_time[a]['gimpy'][s]).ljust(10))
-            result_file[a].write("    ")
-            result_file[a].write(str(run_time[a]['regimpy'][s]).ljust(12))
             result_file[a].write("    ")
             result_file[a].write(str(run_time[a]['theoretical'][s]).ljust(16))
             result_file[a].write("\n")
@@ -346,31 +306,18 @@ def produce_graphs():
     # get number of runs, common for all graphs
     n = list(range(len(run_time['DFS']['theoretical'])))
     for a in algo:
-        # ========= reimplementation
-        # create graph for algorithm a
-        scale = run_time[a]['regimpy'][-1]/run_time[a]['theoretical'][-1]
-        scaled_theoretical = [scale*t for t in run_time[a]['theoretical']]
-        pyplot.plot(n, run_time[a]['regimpy'], 'bs', label='actual runtime')
-        pyplot.plot(n, scaled_theoretical, 'g^', label='theoretical runtime')
-        pyplot.legend(loc='lower right')
-        pyplot.title('regimpy '+a+' running time vs theoretical')
-        pyplot.xlabel('instances')
-        pyplot.ylabel('running time')
-        print(a+"_regimpy.png written to disk.")
-        pyplot.savefig(a+'_regimpy.png')
-        pyplot.close()
-        # ========= old gimpy
+        # ========= gimpy
         # create graph for algorithm a
         scale = run_time[a]['gimpy'][-1]/run_time[a]['theoretical'][-1]
         scaled_theoretical = [scale*t for t in run_time[a]['theoretical']]
         pyplot.plot(n, run_time[a]['gimpy'], 'bs', label='actual runtime')
         pyplot.plot(n, scaled_theoretical, 'g^', label='theoretical runtime')
         pyplot.legend(loc='lower right')
-        pyplot.title('old gimpy '+a+' running time vs theoretical')
+        pyplot.title(a+' running time vs theoretical')
         pyplot.xlabel('instances')
         pyplot.ylabel('running time')
-        print(a+"_gimpy.png written to disk.")
-        pyplot.savefig(a+'_gimpy.png')
+        pyplot.savefig(a+'.png')
+        print(a+".png written to disk.")
         pyplot.close()
 
 if __name__=='__main__':
@@ -379,31 +326,28 @@ if __name__=='__main__':
         print("Seed", i)
         for gen in dense_generator:
             print(gen)
-            # unzip generator
-            (numnodes, density, demand_numnodes, supply_numnodes,
-             demand_range, cost_range, capacity_range) = gen
+            #gen = (numnodes, density, demand_numnodes, supply_numnodes,
+            #       demand_range, cost_range, capacity_range)
             # generate graphs
-            #g, rg = generate_graph(i+1)
-            g = None
-            rg = generate_graph(i+1)
+            rg = generate_graph(i+1, gen)
             print("Testing DFS...")
-            test_DFS(g, rg)
+            test_DFS(rg)
             print("Testing BFS...")
-            test_BFS(g, rg)
+            test_BFS(rg)
             print("Testing Dijkstra...")
-            test_dijkstra(g, rg)
+            test_dijkstra(rg)
             print("Testing Kruskal...")
-            test_kruskal(g, rg)
+            test_kruskal(rg)
             print("Testing Prim...")
-            test_prim(g, rg)
+            test_prim(rg)
             print("Testing PreflowPush...")
-            test_preflow_push(g, rg)
+            test_preflow_push(rg)
             print("Testing augmenting path...")
-            test_augmenting_path(g, rg)
+            test_augmenting_path(rg)
             print("Testing cycle canceling...")
-            test_cycle_canceling(g, rg)
+            test_cycle_canceling(rg)
             print("Testing network simplex...")
-            test_network_simplex(g, rg)
+            test_network_simplex(rg)
             insert_theoretical_runing_times(rg)
     write_result_files()
     produce_graphs()
